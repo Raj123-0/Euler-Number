@@ -6,25 +6,31 @@ Calculates Euler Number to exactly [N] significant digits
 using 12-core parallel chunking, 
 C-accelerated gmpy2 math, and strict OEIS truncation formatting.
 """
+from __future__ import annotations
 
-import sys
-import math
-import time
 import argparse
-import multiprocessing as mp
+import functools
 import gc
+import math
+import multiprocessing as mp
 import os
+import sys
+import time
+
+from gmpy2 import mpz
+import mpmath
+
+
 
 os.environ['MPMATH_GMPY2'] = '1'
-import gmpy2
-import mpmath
-from gmpy2 import mpz
 
 sys.set_int_max_str_digits(0)
 
 NUM_WORKERS = 12
 
-def bs_series_range(a, b, n_squared):
+
+@functools.lru_cache(maxsize=None)
+def bs_series_range(a, b, n_squared) -> tuple:
     """Binary splitting over series interval [a, b)."""
     if b - a == 1:
         k = a
@@ -47,11 +53,30 @@ def bs_series_range(a, b, n_squared):
     R = R1 * Q2 + P1 * R2
     return P, Q, R
 
-def worker_chunk(args):
+
+def worker_chunk(args) -> Any:
+    """Worker function for chunk.
+    
+    Args:
+        args:
+    
+    Returns:
+        Any: The computed result
+    
+    """
     a, b, n_squared = args
     return bs_series_range(a, b, n_squared)
 
+
 def save_oeis_files(constant_name, digits_str, target_digits):
+    """Save oeis files to file.
+    
+    Args:
+        constant_name:
+        digits_str:
+        target_digits:
+    
+    """
     clean_digits = digits_str.replace(".", "")[:target_digits]
     
     raw_filename = f"{constant_name}_{target_digits}_digits.txt"
@@ -65,7 +90,17 @@ def save_oeis_files(constant_name, digits_str, target_digits):
             f.write(f"{idx} {digit}\n")
     print(f"Saved OEIS b-file output to {b_filename}")
 
-def compute_euler_number_hpc(target_digits):
+
+def compute_euler_number_hpc(target_digits) -> Any:
+    """Compute euler number hpc using optimized algorithms.
+    
+    Args:
+        target_digits:
+    
+    Returns:
+        Any: The computed result
+    
+    """
     dps_working = target_digits + 50
     mpmath.mp.dps = dps_working
     ctx = mpmath.mp
@@ -88,7 +123,8 @@ def compute_euler_number_hpc(target_digits):
 
     # Safely aggregate the results in the main process
     P, Q, R_int = results[0]
-    for P_next, Q_next, R_next in results[1:]:
+    for P_next, Q_next, R_next in results[1:
+        ]:
         P = P * P_next
         Q = Q * Q_next
         R_int = R_int * Q_next + P * R_next
@@ -108,7 +144,11 @@ def compute_euler_number_hpc(target_digits):
     save_oeis_files("Euler_Number", clean_digits, target_digits)
     return clean_digits
 
+
 def main():
+    """Entry point — parse arguments and run the main computation.
+    
+    """
     parser = argparse.ArgumentParser(description="HPC Euler Number OEIS Calculator")
     parser.add_argument("-n", "--digits", type=int, default=1000, help="Target digits (default: 1000)")
     args = parser.parse_args()
