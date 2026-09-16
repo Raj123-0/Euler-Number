@@ -19,3 +19,7 @@ python "Euler Number.py" -n 1000
 ```
 
 This will output the 1000-digit precision results formatted for OEIS submission.
+
+## License
+
+This project is licensed under the MIT License.
